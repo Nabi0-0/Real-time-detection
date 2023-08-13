@@ -12,6 +12,10 @@ import smtplib
 #setting up video frame
 cap= cv2.VideoCapture(0)
 
+# Define the codec and create a VideoWriter object
+fourcc = cv2.VideoWriter_fourcc(*'XVID')
+out = cv2.VideoWriter('output.avi', fourcc, 20.0, (640, 480))
+
 #setting up object detection parameter
 whT = 320
 confThreshold = 0.9
@@ -132,6 +136,8 @@ while True:
             print(f"{img_name} written!")
             #img_counter += 1
 
+            #recording
+           out.write(img)
 
     #cleaning up
     cv2.imshow("PROJECT", img)
