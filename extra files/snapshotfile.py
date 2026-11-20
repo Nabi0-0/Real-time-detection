@@ -1,35 +1,72 @@
 import cv2
-import time
+from pathlib import Path
 
-cap = cv2.VideoCapture(0)
 
-face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+def main():
+    project_dir = Path(__file__).resolve().parent
 
-img_counter = 0
+    cap = cv2.VideoCapture(0)
 
-prev_faces = 0
+    if not cap.isOpened():
+        raise RuntimeError("Unable to open webcam.")
 
-while True:
-    ret, frame = cap.read()
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    face_cascade = cv2.CascadeClassifier(
+        cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
+    )
 
-    faces = face_cascade.detectMultiScale(gray, scaleFactor=1.3, minNeighbors=5, minSize=(30, 30))
+    if face_cascade.empty():
+        cap.release()
+        raise RuntimeError("Unable to load face detection classifier.")
 
-    if len(faces) > prev_faces:
-        for (x, y, w, h) in faces:
-            cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+    img_counter = 0
+    face_present = False
 
-        img_name = "opencv_frame_{}.png".format(img_counter)
-        cv2.imwrite(img_name, frame)
-        print("{} written!".format(img_name))
-        img_counter += 1
+    try:
+        while True:
+            ret, frame = cap.read()
 
-    prev_faces = len(faces)
+            if not ret:
+                print("Unable to read webcam frame.")
+                break
 
-    cv2.imshow('Webcam', frame)
+            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
+            faces = face_cascade.detectMultiScale(
+                gray,
+                scaleFactor=1.3,
+                minNeighbors=5,
+                minSize=(30, 30)
+            )
 
-cap.release()
-cv2.destroyAllWindows()
+            if len(faces) > 0 and not face_present:
+                for (x, y, w, h) in faces:
+                    cv2.rectangle(
+                        frame, (x, y), (x + w, y + h), (0, 255, 0), 2
+                    )
+
+                img_name = project_dir / f"opencv_frame_{img_counter}.png"
+                saved = cv2.imwrite(str(img_name), frame)
+
+                if saved:
+                    print(f"{img_name.name} written!")
+                    img_counter += 1
+                else:
+                    print("Unable to save snapshot.")
+
+            face_present = len(faces) > 0
+
+            cv2.imshow("Webcam", frame)
+
+            if cv2.waitKey(1) & 0xFF == ord("q"):
+                break
+
+    except KeyboardInterrupt:
+        print("Interrupted by user.")
+
+    finally:
+        cap.release()
+        cv2.destroyAllWindows()
+
+
+if __name__ == "__main__":
+    main()
